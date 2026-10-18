@@ -1,0 +1,31 @@
+{
+  "name": "bank-trans",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000B\u0000a\u0000n\u0000k\u0000_\u0000T\u0000r\u0000a\u0000n\u0000s\u0000a\u0000c\u0000t\u0000i\u0000o\u0000n\u0000_\u0000S\u0000y\u0000s\u0000t\u0000e\u0000m\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx nodemon server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amitx67/Bank_Transaction_System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/amitx67/Bank_Transaction_System/issues"
+  },
+  "homepage": "https://github.com/amitx67/Bank_Transaction_System#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.11.2",
+    "nodemon": "^3.1.14"
+  }
+}
