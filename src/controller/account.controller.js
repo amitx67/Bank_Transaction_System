@@ -1,17 +1,30 @@
 const accountModel = require("../models/account.model")
 
 
-
 async function createAccountController(req, res) {
 
-    const user = req.user;
-    const account = await accountModel.create({
-        user: user._id
-    })
+    try {
+        const user = req.user;
 
-    res.status(201).json({
-        account
-    })
+        if (!user) {
+            return res.status(401).json({
+                message: "Unauthorized access"
+            })
+        }
+
+        const account = await accountModel.create({
+            user: user._id
+        })
+
+        return res.status(201).json({
+            account
+        })
+    } catch (err) {
+        console.error("Error creating account:", err.message)
+        return res.status(500).json({
+            message: "Unable to create account"
+        })
+    }
 
 }
 

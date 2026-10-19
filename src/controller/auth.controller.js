@@ -7,10 +7,17 @@ const jwt = require("jsonwebtoken")
 * - POST /api/auth/register
 */
 async function userRegisterController(req, res) {
-    const { email, password, name } = req.body
+    const { email, password, name } = req.body || {}
+
+    if (!email || !password || !name) {
+        return res.status(400).json({
+            message: "Email, password, and name are required.",
+            status: "failed"
+        })
+    }
 
     const isExists = await userModel.findOne({
-        email: email
+        email: email.trim().toLowerCase()
     })
 
     if (isExists) {
@@ -26,7 +33,12 @@ async function userRegisterController(req, res) {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie("token", token)
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3 * 24 * 60 * 60 * 1000
+    })
 
     res.status(201).json({
         user: {
@@ -37,7 +49,9 @@ async function userRegisterController(req, res) {
         token
     })
 
-    await emailService.sendRegistrationEmail(user.email, user.name)
+    emailService.sendRegistrationEmail(user.email, user.name).catch((err) => {
+        console.error("Registration email failed:", err.message)
+    })
 }
 
 
@@ -48,9 +62,15 @@ async function userRegisterController(req, res) {
   */
 
 async function userLoginController(req, res) {
-    const { email, password } = req.body
+    const { email, password } = req.body || {}
 
-    const user = await userModel.findOne({ email }).select("+password")
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "Email and password are required."
+        })
+    }
+
+    const user = await userModel.findOne({ email: email.trim().toLowerCase() }).select("+password")
 
     if (!user) {
         return res.status(401).json({
@@ -68,7 +88,12 @@ async function userLoginController(req, res) {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie("token", token)
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3 * 24 * 60 * 60 * 1000
+    })
 
     res.status(200).json({
         user: {
@@ -81,8 +106,21 @@ async function userLoginController(req, res) {
 
 }
 
+async function userLogoutController(req, res) {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    })
+
+    return res.status(200).json({
+        message: "Logged out successfully"
+    })
+}
+
 
 module.exports = {
     userRegisterController,
-    userLoginController
+    userLoginController,
+    userLogoutController
 }

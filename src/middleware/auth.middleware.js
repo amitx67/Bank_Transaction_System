@@ -3,18 +3,25 @@ const jwt = require("jsonwebtoken")
 
 
 async function authMiddleware(req, res, next) {
-    const token = req.cokkies.token || req.headers.authorization?.split(" ")[1]
+    const token = req.cookies?.token || req.headers.authorization?.split(" ")[1]
 
     if (!token) {
         return res.status(401).json({
-            message: "unathorized access, no token found"
+            message: "unauthorized access, no token found"
         })
     }
 
     try {
 
-        const decoded = jwt.verify(token, process.env,JWT_SECRET)
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
         const user = await userModel.findById(decoded.userId)
+
+        if (!user) {
+            return res.status(401).json({
+                message: "unauthorized access, user not found"
+            })
+        }
+
         req.user = user
 
         return next()
@@ -22,7 +29,7 @@ async function authMiddleware(req, res, next) {
     } catch (err) {
 
         return res.status(401).json({
-            message: "unathorized acesss token is invalid."
+            message: "unauthorized access, token is invalid or expired"
         })
         
     }
