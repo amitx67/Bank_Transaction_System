@@ -1,8 +1,7 @@
-// const express = require("express")
 const accountModel = require("../models/account.model")
 
 
 
-// const 
-
-// module.exports = 
+async function createAccountController(req, res) {
+    
+}
