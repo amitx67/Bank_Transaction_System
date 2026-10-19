@@ -1,96 +1,88 @@
-const userModel = require("../models/user.model.js");
-const jwt = require("jsonwebtoken");
+const userModel = require("../models/user.model")
+const emailService = require("../services/email.service.js")
+const jwt = require("jsonwebtoken")
 
+/**
+* - user register controller
+* - POST /api/auth/register
+*/
 async function userRegisterController(req, res) {
-  try {
-    const { email, password, name } = req.body || {};
+    const { email, password, name } = req.body
 
-    if (
-      typeof email !== "string" || !email.trim() ||
-      typeof password !== "string" || !password ||
-      typeof name !== "string" || !name.trim()
-    ) {
-      return res.status(400).json({
-        message: "Name, email, and password are required",
-        status: "failed"
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        message: "Password must be at least 6 characters long",
-        status: "failed"
-      });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is missing from the environment");
-      return res.status(500).json({
-        message: "Server configuration error",
-        status: "failed"
-      });
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const isExists = await userModel.findOne({ email: normalizedEmail });
+    const isExists = await userModel.findOne({
+        email: email
+    })
 
     if (isExists) {
-      return res.status(422).json({
-        message: "User already exists with the same email",
-        status: "failed"
-      });
+        return res.status(422).json({
+            message: "User already exists with email.",
+            status: "failed"
+        })
     }
 
-    // The User model hashes the password in its pre-save middleware.
     const user = await userModel.create({
-      email: normalizedEmail,
-      password,
-      name: name.trim()
-    });
+        email, password, name
+    })
 
-    const token = jwt.sign(
-      { userId: user._id.toString() },
-      process.env.JWT_SECRET,
-      { expiresIn: "3d" }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 3 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("token", token)
 
-    return res.status(201).json({
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name
-      },
-      token
-    });
-  } catch (error) {
-    // Handle duplicate email writes that race past the initial lookup.
-    if (error && error.code === 11000) {
-      return res.status(422).json({
-        message: "User already exists with the same email",
-        status: "failed"
-      });
-    }
+    res.status(201).json({
+        user: {
+            _id: user._id,
+            email: user.email,
+            name: user.name
+        },
+        token
+    })
 
-    if (error && error.name === "ValidationError") {
-      return res.status(400).json({
-        message: error.message,
-        status: "failed"
-      });
-    }
-
-    console.error("Registration error:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-      status: "failed"
-    });
-  }
+    await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
-module.exports = { userRegisterController };
+
+
+/**
+ * - User Login Controller
+ * - POST /api/auth/login
+  */
+
+async function userLoginController(req, res) {
+    const { email, password } = req.body
+
+    const user = await userModel.findOne({ email }).select("+password")
+
+    if (!user) {
+        return res.status(401).json({
+            message: "Email or password is INVALID"
+        })
+    }
+
+    const isValidPassword = await user.comparePassword(password)
+
+    if (!isValidPassword) {
+        return res.status(401).json({
+            message: "Email or password is INVALID"
+        })
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
+
+    res.cookie("token", token)
+
+    res.status(200).json({
+        user: {
+            _id: user._id,
+            email: user.email,
+            name: user.name
+        },
+        token
+    })
+
+}
+
+
+module.exports = {
+    userRegisterController,
+    userLoginController
+}

@@ -26,6 +26,3 @@ The server connects to MongoDB before listening. The port is `PORT` from `.env` 
 
 The API returns the created user's public fields and a JWT, and sets an HTTP-only cookie. Passwords are hashed before being stored.
 
-## Security note
-
-Do not commit or share your real `.env` file. This ZIP intentionally includes `.env.example` instead of any credentials from the uploaded project.
